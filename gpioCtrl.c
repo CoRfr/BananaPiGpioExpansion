@@ -49,7 +49,7 @@ uint32_t ReadCache()
     int ret;
 
     fd = fopen(CACHE_FILE, "r");
-    if (fd != NULL)
+    if (fd == NULL)
     {
         fprintf(stderr, "Error reading stored value\n");
         return DEFAULT_VALUE;
@@ -72,7 +72,7 @@ void StoreCache(uint32_t value)
     FILE * fd;
 
     fd = fopen(CACHE_FILE, "w");
-    if (fd != NULL)
+    if (fd == NULL)
     {
         fprintf(stderr, "Error reading stored value\n");
         return;
@@ -93,9 +93,21 @@ int main(int argc, char * argv[])
 {
     uint32_t value, pinNumber, pinValue;
 
+    if (argc > 2)
+    {
+        sscanf(argv[1], "%u", &pinNumber);
+        sscanf(argv[2], "%u", &pinValue);
+        printf("%u: %u\n", pinNumber, pinValue);
+    }
+    else
+    {
+        fprintf(stderr, "Usage: <pinNumber> <pinValue>\n");
+	return 1;
+    }
+
     if (-1 == wiringPiSetup())
     {
-        printf("Setup wiringPi failed!");
+        fprintf(stderr, "Setup wiringPi failed!\n");
         return 1;
     }   
 
@@ -103,24 +115,22 @@ int main(int argc, char * argv[])
 
     value = ReadCache();
 
-    if (argc > 3)
-    {
-        sscanf(argv[1], "%u", &pinNumber);
-        sscanf(argv[2], "%u", &pinValue);
-        printf("%u: %u", pinNumber, pinValue);
-    }
-
     if (pinValue)
     {
         value |= (1 << pinNumber);
     }
     else
     {
-        value &= (0 << pinNumber);
+        value &= ~(1 << pinNumber);
     }
 
-    printf("%0X", value);
+    printf("0x%08X\n", value);
     
-    //digitalWrite(RCLK, 1);
+    SetValue(value);
+    StoreCache(value);
+
+    digitalWrite(RCLK, 1);
+
+    return 0;
 }
 
